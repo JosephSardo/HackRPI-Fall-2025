@@ -27,7 +27,7 @@ export function findNextOpenCellDown(cells, row, col, rows, cols) {
       const cell = getCellByIndex(cells, rr, col, cols)
       if (cell && !cell.isBlack) return { row: rr, col: col }
     }
-    // If no open cells below, find the topmost open cell in the next columns to the right
+    // if no open cells below, find the topmost open cell in the next columns to the right
     for (let cc = col + 1; cc < cols; cc++) {
       for (let rr = 0; rr < rows; rr++) {
         const cell = getCellByIndex(cells, rr, cc, cols)
