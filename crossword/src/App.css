@@ -1,0 +1,354 @@
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.app h1 {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.player-headers {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.player-header {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  font-size: 1.2rem;
+  cursor: default;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: #f5f5f5;
+  color: #666;
+}
+
+
+
+.player-header.active {
+  background: #4caf50;
+  color: white;
+  font-weight: bold;
+}
+
+.score-widget {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.score-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.score-label {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.score-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.timer-display {
+  border-left: 2px solid #ddd;
+  border-right: 2px solid #ddd;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.timer-value {
+  color: #e74c3c;
+  font-family: 'Courier New', monospace;
+}
+
+.turn-timer {
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 4px;
+  border-left: 2px solid #ffc107;
+  border-right: 2px solid #ffc107;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.turn-timer .score-value.urgent {
+  color: #dc3545;
+  animation: pulse 1s infinite;
+  font-weight: bold;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.status {
+  font-size: 0.95rem;
+  color: #333;
+  margin: 0;
+}
+
+.demo-btn {
+  align-self: flex-start;
+  padding: 8px 16px;
+  font-size: 1rem;
+  cursor: pointer;
+  background: #5b9cff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  transition: background 150ms ease;
+}
+
+.demo-btn:hover {
+  background: #4a8ae6;
+}
+
+.grid {
+  display: grid;
+  gap: 0;
+  align-items: stretch;
+  width: 500px;
+  height: 500px;
+  flex-shrink: 0;
+}
+
+/* When modal is open, mark the grid as hidden to assistive tech and disable interaction */
+.grid[aria-hidden="true"] {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.cell {
+  /* background-image: url('/images/red_square.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center; */
+  background: #fff;
+  border: none;
+  color: #000;
+  border: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1;
+  overflow: hidden;
+  user-select: none;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+  transition: background 120ms ease, border-color 120ms ease;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.cell.selected {
+  z-index: 20;
+  background-color: rgba(230, 243, 255, 0.7);
+  border-color: #5b9cff;
+  color: #022;
+}
+
+/* Focused cell shows a yellow highlight to indicate keyboard focus */
+.cell:focus {
+  background-color: rgba(255, 200, 149, 0.7); /* semi-transparent pale orange */
+  border-color: #ff9d3c;
+  color: #000;
+  outline: none;
+  box-shadow: none;
+  z-index: 30; /* ensure focus ring is above neighbors */
+}
+
+/* If a selected cell also has focus, prefer the focus (orange) styling */
+.cell.selected:focus {
+  background-image: url('images/transluscent_square.png');
+  background-size: cover;
+  background-color: rgba(255, 200, 149, 0.7);
+  border-color: #ff9d3c;
+  color: #000;
+  z-index: 40;
+}
+
+.cell.row-highlight {
+  background-color: rgba(255, 248, 176, 0.7);
+  border-color: #ffd54f;
+}
+
+.cell.mutable {
+  background-color: rgba(232, 245, 232, 0.7);
+  border-color: #4caf50;
+}
+
+/* Number badge in top-left of a cell for across/down clue numbering */
+.cell .num {
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  font-size: 0.6rem;
+  color: #333;
+  line-height: 1;
+  pointer-events: none;
+  font-weight: 500;
+}
+
+.cell.black {
+  background: #222;
+  color: #222;
+  cursor: default;
+  /* background-image: url('images/black_square.png');
+  background-size: cover;
+  background-color: transparent; */
+}
+
+.cell.black.selected {
+  background: #222;
+  border-color: #222;
+  color: #222;
+  z-index: 1;
+}
+
+@media (max-width: 480px) {
+  .grid {
+    width: 320px;
+    height: 320px;
+  }
+}
+
+/* Board layout: grid + clues side-by-side */
+.board {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.clues {
+  width: 260px;
+  max-height: 640px;
+  overflow: auto;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+}
+
+.clue-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.clue-group h3 {
+  margin: 0 0 6px 0;
+  font-size: 0.95rem;
+}
+
+.clue-group ul,
+.clue-group ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clue-group li {
+  margin-bottom: 6px;
+  font-size: 0.92rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.clue-group li strong {
+  text-align: right;
+  min-width: 2ch;
+}
+
+.clue-group li.active-clue {
+  background: #fff8b0;
+  padding: 4px;
+  margin: 0 -4px 6px -4px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+@media (max-width: 880px) {
+  .board { flex-direction: column; }
+  .clues { width: 100%; max-height: 260px; }
+}
+
+/* Modal shown when players swap */
+.modal-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: white;
+  padding: 24px 28px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  text-align: center;
+  max-width: 90%;
+}
+
+.modal-message {
+  margin: 0 0 16px 0;
+  font-size: 1.05rem;
+  color: #111;
+}
+
+.modal-btn {
+  padding: 10px 18px;
+  font-size: 1.02rem;
+  border: none;
+  background: #4caf50; /* green */
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(255,152,0,0.18);
+}
+
+.modal-btn:hover { background: #4caf50 }
+
+/* When modal is open, mark the grid as hidden to assistive tech and disable interaction */
+.grid[aria-hidden="true"] {
+  pointer-events: none;
+  opacity: 0.6;
+}
