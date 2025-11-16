@@ -1,14 +1,18 @@
+import AcrossClues from './components/AcrossClues.jsx'
+import DownClues from './components/DownClues.jsx'
+import Grid from './components/Grid.jsx'
 import { SAMPLE_CROSSWORD } from './data/sampleCrossword.js'
 import * as gridNav from './logic/gridNavigation.js'
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
       
-function App() {
+export default function App() {
   // Grid states
   const [cells, setCells] = useState([])
   const [rows, setRows] = useState(0)
   const [cols, setCols] = useState(0)
   const [grid, setGrid] = useState(null)
+  const [crossword, setCrossword] = useState(null)
 
   // Navigation states
   const [selected, setSelected] = useState(null)
@@ -96,8 +100,6 @@ function App() {
     return () => clearInterval(timer)
   }, [turnTimeLeft, turnTimerActive, gameStarted])
   
-  
-  
   function initializeGrid(crossword) {
     const isBlack = (row, col) => crossword.grid[row] && crossword.grid[row][col] === '#' 
     const newCells = []
@@ -131,11 +133,10 @@ function App() {
     setRows(crossword.rows)
     setCols(crossword.cols)
     setGrid(crossword.grid)
+    setCrossword(crossword)
     setCells(newCells)
   }
   
-  
-
   function handleCellClick(row, col) {
     if (showSwapModal || showStartModal || winModalPlayer !== null) return
     if (gridNav.getCellByIndex(cells, row, col, cols)?.isBlack) return
@@ -178,76 +179,6 @@ function App() {
       const el = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`)
       if (el) el.focus()
     }, 0)
-  }
-
-  function updateRowHighlight(row, col) {
-    // Find contiguous non-black cells in the row
-    let left = col
-    while (left > 0 && !gridNav.getCellByIndex(cells, row, left - 1, cols)?.isBlack) {
-      left -= 1
-    }
-
-    let right = col
-    while (right < cols - 1 && !gridNav.getCellByIndex(cells, row, right + 1, cols)?.isBlack) {
-      right += 1
-    }
-
-    const highlighted = []
-    for (let i = left; i <= right; i++) {
-      highlighted.push(gridNav.getCellKey(row, i))
-    }
-    setHighlight(highlighted)
-    // Update current across clue number
-    const startCell = gridNav.getCellByIndex(cells, row, left, cols)
-    setCurrentAcrossClue(startCell?.number || null)
-  }
-
-  function updateColHighlight(row, col) {
-    if (showSwapModal || showStartModal || winModalPlayer !== null) { ev.preventDefault(); return }
-    let top = row
-    while (top - 1 >= 0 && !gridNav.getCellByIndex(cells, top - 1, col, cols)?.isBlack) {
-      top -= 1
-    }
-
-    let bottom = row
-    while (bottom + 1 < rows && !gridNav.getCellByIndex(cells, bottom + 1, col, cols)?.isBlack) {
-      bottom += 1
-    }
-
-    const highlighted = []
-    for (let i = top; i <= bottom; i++) {
-      highlighted.push(gridNav.getCellKey(i, col))
-    }
-    setHighlight(highlighted)
-    // Update current down clue number
-    const startCell = gridNav.getCellByIndex(cells, top, col, cols)
-    setCurrentDownClue(startCell?.number || null)
-  }
-
-  function onFail(row, col, across) {
-    if (across) {
-      for (let i = col; !gridNav.getCellByIndex(cells, row, i, cols).isBlack; i++) {
-        setCells(prev => {
-          const updated = [...prev]
-          if (gridNav.getCellByIndex(updated, row, i, cols).mutable) {
-            gridNav.getCellByIndex(updated, row, i, cols).value = ""
-          }
-          return updated
-        })
-      }
-      return
-    }
-    // down
-    for (let i = row; !gridNav.getCellByIndex(cells, i, col, cols).isBlack; i++) {
-      setCells(prev => {
-        const updated = [...prev]
-        if (gridNav.getCellByIndex(updated, i, col, cols).mutable) {
-          gridNav.getCellByIndex(updated, i, col, cols).value = ""
-        }
-        return updated
-      })
-    }
-
   }
 
   function handleKeyEnter(row, col, ev) {
@@ -468,6 +399,76 @@ function App() {
     }
   }
 
+  function updateRowHighlight(row, col) {
+    // Find contiguous non-black cells in the row
+    let left = col
+    while (left > 0 && !gridNav.getCellByIndex(cells, row, left - 1, cols)?.isBlack) {
+      left -= 1
+    }
+
+    let right = col
+    while (right < cols - 1 && !gridNav.getCellByIndex(cells, row, right + 1, cols)?.isBlack) {
+      right += 1
+    }
+
+    const highlighted = []
+    for (let i = left; i <= right; i++) {
+      highlighted.push(gridNav.getCellKey(row, i))
+    }
+    setHighlight(highlighted)
+    // Update current across clue number
+    const startCell = gridNav.getCellByIndex(cells, row, left, cols)
+    setCurrentAcrossClue(startCell?.number || null)
+  }
+
+  function updateColHighlight(row, col) {
+    if (showSwapModal || showStartModal || winModalPlayer !== null) { ev.preventDefault(); return }
+    let top = row
+    while (top - 1 >= 0 && !gridNav.getCellByIndex(cells, top - 1, col, cols)?.isBlack) {
+      top -= 1
+    }
+
+    let bottom = row
+    while (bottom + 1 < rows && !gridNav.getCellByIndex(cells, bottom + 1, col, cols)?.isBlack) {
+      bottom += 1
+    }
+
+    const highlighted = []
+    for (let i = top; i <= bottom; i++) {
+      highlighted.push(gridNav.getCellKey(i, col))
+    }
+    setHighlight(highlighted)
+    // Update current down clue number
+    const startCell = gridNav.getCellByIndex(cells, top, col, cols)
+    setCurrentDownClue(startCell?.number || null)
+  }
+
+  function onFail(row, col, across) {
+    if (across) {
+      for (let i = col; !gridNav.getCellByIndex(cells, row, i, cols).isBlack; i++) {
+        setCells(prev => {
+          const updated = [...prev]
+          if (gridNav.getCellByIndex(updated, row, i, cols).mutable) {
+            gridNav.getCellByIndex(updated, row, i, cols).value = ""
+          }
+          return updated
+        })
+      }
+      return
+    }
+    // down
+    for (let i = row; !gridNav.getCellByIndex(cells, i, col, cols).isBlack; i++) {
+      setCells(prev => {
+        const updated = [...prev]
+        if (gridNav.getCellByIndex(updated, i, col, cols).mutable) {
+          gridNav.getCellByIndex(updated, i, col, cols).value = ""
+        }
+        return updated
+      })
+    }
+
+  }
+
   useEffect(() => {
     if (showSwapModal) {
       // focus the Continue button so keyboard users can proceed
@@ -527,36 +528,15 @@ function App() {
           gridTemplateColumns: `repeat(${cols}, 1fr)`,
           gridTemplateRows: `repeat(${rows}, 1fr)`
         }}>
-          {cells.map((cell, idx) => {
-          const key = gridNav.getCellKey(cell.row, cell.col)
-          const isSelected = selected?.row === cell.row && selected?.col === cell.col
-          const isHighlighted = highlight.includes(key)
-          const isImmutable = !cell.mutable
-          return (
-            <div
-              key={key}
-              data-row={cell.row}
-              data-col={cell.col}
-              className={`cell ${cell.isBlack ? 'black' : ''} ${isSelected ? 'selected' : ''} ${isHighlighted ? 'row-highlight' : ''} ${isImmutable ? 'mutable' : ''}`}
-              role={cell.isBlack ? 'presentation' : 'gridcell'}
-              tabIndex={cell.isBlack ? -1 : 0}
-              onClick={() => handleCellClick(cell.row, cell.col)}
-              onDoubleClick={() => handleCellDoubleClick(cell.row, cell.col)}
-              onKeyDown={(ev) => handleCellKeyDown(cell.row, cell.col, ev)}
-            >
-              {cell.number ? <span className="num">{cell.number}</span> : null}
-              {cell.value}
-            </div>
-          )
-        })}
+          <Grid cells={cells} selected={selected} highlight={highlight} clickHandler={handleCellClick} doubleClickHandler={handleCellDoubleClick} keyDownHandler={handleCellKeyDown}/>
         </div>
-
+        
         <aside className="clues" aria-label="Across Clues">
-          <ClueLists cells={cells} activeClue={currentAcrossClue} isActive={direction === 'across'} />
+          <AcrossClues crossword={crossword} cells={cells} activeClue={currentAcrossClue} isActive={direction === 'across'} />
         </aside>
 
         <aside className="clues" aria-label="Down Clues">
-          <DownClues cells={cells} activeClue={currentDownClue} isActive={direction === 'down'} />
+          <DownClues crossword={crossword} cells={cells} activeClue={currentDownClue} isActive={direction === 'down'} />
         </aside>
       </div>
       { winModalPlayer && winModalPlayer != 'Tie' && (
@@ -617,79 +597,3 @@ function App() {
     </main>
   )
 }
-
-function ClueLists({ cells, activeClue, isActive }) {
-  const activeRefs = useRef({})
-
-  useEffect(() => {
-    if (isActive && activeClue && activeRefs.current[activeClue]) {
-      activeRefs.current[activeClue].scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
-  }, [activeClue, isActive])
-
-  if (!cells || cells.length === 0) return null
-
-  const across = []
-
-  // build across clues
-  SAMPLE_CROSSWORD['hints']['across'].forEach(hint => across.push(hint))
-
-  return (
-    <div className="clue-lists">
-      <div className="clue-group">
-        <h3>Across</h3>
-        <ul>
-          {across.sort((a, b) => a.number - b.number).map(item => (
-            <li 
-              key={`a-${item.number || `${item.row}-${item.col}`}`}
-              className={isActive && item.number === activeClue ? 'active-clue' : ''}
-              ref={el => { if (item.number) activeRefs.current[item.number] = el }}
-            >
-              <strong>{item.number}</strong> {item.clue}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  )
-}
-
-function DownClues({ cells, activeClue, isActive }) {
-  const activeRefs = useRef({})
-
-  useEffect(() => {
-    if (isActive && activeClue && activeRefs.current[activeClue]) {
-      activeRefs.current[activeClue].scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
-  }, [activeClue, isActive]) 
-
-  if (!cells || cells.length === 0) return null
-
-  const down = []
-
-  // build down clues
-  for (const hint in SAMPLE_CROSSWORD['hints']['down']) {
-    down.push(SAMPLE_CROSSWORD['hints']['down'][hint])
-  }
-  
-  return (
-    <div className="clue-lists">
-      <div className="clue-group">
-        <h3>Down</h3>
-        <ul>
-          {down.sort((a, b) => a.number - b.number).map(item => (
-            <li 
-              key={`d-${item.number || `${item.row}-${item.col}`}`}
-              className={isActive && item.number === activeClue ? 'active-clue' : ''}
-              ref={el => { if (item.number) activeRefs.current[item.number] = el }}
-            >
-              <strong>{item.number}</strong> {item.clue}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  )
-}
-
-export default App
