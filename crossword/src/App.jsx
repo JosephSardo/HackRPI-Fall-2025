@@ -567,9 +567,9 @@ function App() {
       </div>
       { winModalPlayer && winModalPlayer != 'Tie' && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal-box">
-            <p className="modal-message">{winModalPlayer} wins!</p>
-            <p className="modal-scores">Final Scores - Player 1: {player1Score}, Player 2: {player2Score}</p>
+          <div className="victory-modal">
+            <p className="victory-message">🎉 {winModalPlayer} Wins! 🎉</p>
+            <p className="victory-scores">{player1Score}-{player2Score}</p>
           </div>
         </div>
       )}
