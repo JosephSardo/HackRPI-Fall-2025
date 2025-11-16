@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import Crossword from './classes/Crossword.js'
 import AcrossClues from './components/AcrossClues.jsx'
 import DownClues from './components/DownClues.jsx'
@@ -8,16 +7,12 @@ import ScoreWidget from './components/ScoreWidget.jsx'
 import ModalOverlay from './components/ModalOverlay.jsx'
 import StartModal from './components/StartModal.jsx'
 import VictoryModal from './components/VictoryModal.jsx'
-=======
-import AcrossClues from './components/AcrossClues.jsx'
-import DownClues from './components/DownClues.jsx'
-import Grid from './components/Grid.jsx'
-import { SAMPLE_CROSSWORD } from './data/sampleCrossword.js'
->>>>>>> ca83e0d7bf0430b2abb7f8a58b6a22afb3cec8f6
 import * as gridNav from './logic/gridNavigation.js'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
       
+const TURN_TIME = 30
+
 export default function App() {
   // Grid states
   const [cells, setCells] = useState([])
@@ -25,10 +20,7 @@ export default function App() {
   const [cols, setCols] = useState(0)
   const [grid, setGrid] = useState(null)
   const [crossword, setCrossword] = useState(null)
-<<<<<<< HEAD
   const [fileLoaded, setFileLoaded] = useState(false)
-=======
->>>>>>> ca83e0d7bf0430b2abb7f8a58b6a22afb3cec8f6
 
   // Navigation states
   const [selected, setSelected] = useState(null)
@@ -47,8 +39,8 @@ export default function App() {
   const [player2Score, setPlayer2Score] = useState(0)
   
   // Time states
-  const [timeLeft, setTimeLeft] = useState(11) // 10 minutes in seconds
-  const [turnTimeLeft, setTurnTimeLeft] = useState(10) // 10 seconds per turn
+  const [timeLeft, setTimeLeft] = useState(300) // 10 minutes in seconds
+  const [turnTimeLeft, setTurnTimeLeft] = useState(TURN_TIME) // 10 seconds per turn
   const [turnTimerActive, setTurnTimerActive] = useState(false)
   const [gameStarted, setGameStarted] = useState(false)
 
@@ -78,40 +70,9 @@ export default function App() {
       console.log('Selected .puz file:', file.name)
       parsePuzFile(file)
     }
-<<<<<<< HEAD
     // Reset file input
     event.target.value = ''
   }
-=======
-
-    const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1)
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [timeLeft, player1Score, player2Score, showSwapModal, showStartModal, gameStarted])
-
-  // Turn timer countdown effect
-  useEffect(() => {
-    if (!gameStarted) return
-    if (!turnTimerActive || turnTimeLeft <= 0) {
-      if (turnTimeLeft <= 0 && turnTimerActive) {
-        // Time's up - switch players
-        setActivePlayer(prev => !prev)
-        setTurnTimeLeft(10) // Reset timer
-        setTurnTimerActive(false) // Stop timer until next action
-        setShowSwapModal(true) // Show swap notification
-      }
-      return
-    }
-
-    const timer = setInterval(() => {
-      setTurnTimeLeft(prev => prev - 1)
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [turnTimeLeft, turnTimerActive, gameStarted])
->>>>>>> ca83e0d7bf0430b2abb7f8a58b6a22afb3cec8f6
   
   function initializeGrid(crossword) {
     console.log('initializeGrid called with:', crossword)
@@ -155,7 +116,6 @@ export default function App() {
     setCells(newCells)
   }
   
-<<<<<<< HEAD
 
   function parsePuzFile(file) {
     const formData = new FormData()
@@ -225,7 +185,7 @@ export default function App() {
     
     // Reset time states
     setTimeLeft(11)
-    setTurnTimeLeft(10)
+    setTurnTimeLeft(TURN_TIME)
     setTurnTimerActive(false)
     setGameStarted(false)
     
@@ -300,7 +260,7 @@ export default function App() {
       if (turnTimeLeft <= 0 && turnTimerActive) {
         // Time's up - switch players
         setActivePlayer(prev => !prev)
-        setTurnTimeLeft(10) // Reset timer
+        setTurnTimeLeft(TURN_TIME) // Reset timer
         setTurnTimerActive(false) // Stop timer until continue button is pressed
         setShowSwapModal(true) // Show swap notification
       }
@@ -314,8 +274,6 @@ export default function App() {
     return () => clearInterval(timer)
   }, [turnTimeLeft, turnTimerActive, gameStarted])
   
-=======
->>>>>>> ca83e0d7bf0430b2abb7f8a58b6a22afb3cec8f6
   function handleCellClick(row, col) {
     if (showSwapModal || showStartModal || winModalPlayer !== null || viewingSolution) return
     if (gridNav.getCellByIndex(cells, row, col, cols)?.isBlack) return
@@ -360,7 +318,6 @@ export default function App() {
     }, 0)
   }
 
-<<<<<<< HEAD
   function updateRowHighlight(row, col) {
     // Find contiguous non-black cells in the row
     let left = col
@@ -431,8 +388,6 @@ export default function App() {
 
   }
 
-=======
->>>>>>> ca83e0d7bf0430b2abb7f8a58b6a22afb3cec8f6
   function handleKeyEnter(row, col, ev) {
     if (gridNav.getCellByIndex(cells, row, col, cols)?.isBlack) return
 
@@ -668,76 +623,6 @@ export default function App() {
     }
   }
 
-  function updateRowHighlight(row, col) {
-    // Find contiguous non-black cells in the row
-    let left = col
-    while (left > 0 && !gridNav.getCellByIndex(cells, row, left - 1, cols)?.isBlack) {
-      left -= 1
-    }
-
-    let right = col
-    while (right < cols - 1 && !gridNav.getCellByIndex(cells, row, right + 1, cols)?.isBlack) {
-      right += 1
-    }
-
-    const highlighted = []
-    for (let i = left; i <= right; i++) {
-      highlighted.push(gridNav.getCellKey(row, i))
-    }
-    setHighlight(highlighted)
-    // Update current across clue number
-    const startCell = gridNav.getCellByIndex(cells, row, left, cols)
-    setCurrentAcrossClue(startCell?.number || null)
-  }
-
-  function updateColHighlight(row, col) {
-    if (showSwapModal || showStartModal || winModalPlayer !== null) { ev.preventDefault(); return }
-    let top = row
-    while (top - 1 >= 0 && !gridNav.getCellByIndex(cells, top - 1, col, cols)?.isBlack) {
-      top -= 1
-    }
-
-    let bottom = row
-    while (bottom + 1 < rows && !gridNav.getCellByIndex(cells, bottom + 1, col, cols)?.isBlack) {
-      bottom += 1
-    }
-
-    const highlighted = []
-    for (let i = top; i <= bottom; i++) {
-      highlighted.push(gridNav.getCellKey(i, col))
-    }
-    setHighlight(highlighted)
-    // Update current down clue number
-    const startCell = gridNav.getCellByIndex(cells, top, col, cols)
-    setCurrentDownClue(startCell?.number || null)
-  }
-
-  function onFail(row, col, across) {
-    if (across) {
-      for (let i = col; !gridNav.getCellByIndex(cells, row, i, cols).isBlack; i++) {
-        setCells(prev => {
-          const updated = [...prev]
-          if (gridNav.getCellByIndex(updated, row, i, cols).mutable) {
-            gridNav.getCellByIndex(updated, row, i, cols).value = ""
-          }
-          return updated
-        })
-      }
-      return
-    }
-    // down
-    for (let i = row; !gridNav.getCellByIndex(cells, i, col, cols).isBlack; i++) {
-      setCells(prev => {
-        const updated = [...prev]
-        if (gridNav.getCellByIndex(updated, i, col, cols).mutable) {
-          gridNav.getCellByIndex(updated, i, col, cols).value = ""
-        }
-        return updated
-      })
-    }
-
-  }
-
   useEffect(() => {
     if (showSwapModal) {
       // focus the Continue button so keyboard users can proceed
@@ -782,7 +667,7 @@ export default function App() {
         }}>
           <Grid cells={cells} selected={selected} highlight={highlight} clickHandler={handleCellClick} doubleClickHandler={handleCellDoubleClick} keyDownHandler={handleCellKeyDown}/>
         </div>
-        
+
         <aside className="clues" aria-label="Across Clues">
           <AcrossClues crossword={crossword} cells={cells} activeClue={currentAcrossClue} isActive={direction === 'across'} />
         </aside>
@@ -811,7 +696,7 @@ export default function App() {
           setShowStartModal(false)
           setGameStarted(true)
           setTurnTimerActive(true)
-          setTurnTimeLeft(10)
+          setTurnTimeLeft(TURN_TIME)
           setTimeout(() => {
             const el = document.querySelector(`.cell[data-row="${selected?.row}"][data-col="${selected?.col}"]`)
             if (el) el.focus()
@@ -826,7 +711,7 @@ export default function App() {
           setShowSwapModal(false)
           // Start turn timer only when continue button is pressed
           setTurnTimerActive(true)
-          setTurnTimeLeft(10)
+          setTurnTimeLeft(TURN_TIME)
           setTimeout(() => {
             const el = document.querySelector(`.cell[data-row="${selected?.row}"][data-col="${selected?.col}"]`)
             if (el) el.focus()
@@ -835,111 +720,3 @@ export default function App() {
     </main>
   )
 }
-<<<<<<< HEAD
-=======
-
-function ClueLists({ cells, activeClue, isActive }) {
-  const activeRefs = useRef({})
-
-  useEffect(() => {
-    if (isActive && activeClue && activeRefs.current[activeClue]) {
-      activeRefs.current[activeClue].scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
-  }, [activeClue, isActive])
-
-  if (!cells || cells.length === 0) return null
-
-  const across = []
-
-  // build across clues
-  SAMPLE_CROSSWORD['hints']['across'].forEach(hint => across.push(hint))
-
-  return (
-    <div className="clue-lists">
-      <div className="clue-group">
-        <h3>Across</h3>
-        <ul>
-          {across.sort((a, b) => a.number - b.number).map(item => (
-            <li 
-              key={`a-${item.number || `${item.row}-${item.col}`}`}
-              className={isActive && item.number === activeClue ? 'active-clue' : ''}
-              ref={el => { if (item.number) activeRefs.current[item.number] = el }}
-            >
-              <strong>{item.number}</strong> {item.clue}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  )
-}
-
-function DownClues({ cells, activeClue, isActive }) {
-  const activeRefs = useRef({})
-
-  useEffect(() => {
-    if (isActive && activeClue && activeRefs.current[activeClue]) {
-      activeRefs.current[activeClue].scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
-  }, [activeClue, isActive]) 
-
-  if (!cells || cells.length === 0) return null
-
-  const down = []
-
-  // build down clues
-  for (const hint in SAMPLE_CROSSWORD['hints']['down']) {
-    down.push(SAMPLE_CROSSWORD['hints']['down'][hint])
-  }
-  
-  return (
-    <div className="clue-lists">
-      <div className="clue-group">
-        <h3>Down</h3>
-        <ul>
-          {down.sort((a, b) => a.number - b.number).map(item => (
-            <li 
-              key={`d-${item.number || `${item.row}-${item.col}`}`}
-              className={isActive && item.number === activeClue ? 'active-clue' : ''}
-              ref={el => { if (item.number) activeRefs.current[item.number] = el }}
-            >
-              <strong>{item.number}</strong> {item.clue}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  )
-}
-
-function Confetti() {
-  const pieces = useMemo(() => {
-    return Array.from({ length: 120 }, (_, i) => {
-      const drift = (Math.random() - 0.5) * 400 // -200px to +200px horizontal drift
-      const rotation = Math.random() * 720 + 360 // 360-1080 degrees
-      const duration = 2 + Math.random() * 2 // 2-4 seconds
-      const delay = Math.random() * 1 // 0-1 second delay
-      const size = 0.8 + Math.random() * 1.2 // 0.8x to 2x size multiplier
-      
-      return (
-        <div
-          key={`confetti-${i}`}
-          className="confetti-piece"
-          style={{
-            left: `${Math.random() * 120 - 10}%`, // -10% to 110% (overflow for edge effect)
-            '--drift': `${drift}px`,
-            '--rotation': `${rotation}deg`,
-            '--size': size,
-            animationDelay: `${delay}s`,
-            animationDuration: `${duration}s`,
-          }}
-        />
-      )
-    })
-  }, []) // Empty dependency array ensures pieces are created only once
-
-  return <div className="confetti">{pieces}</div>
-}
-
-export default App
->>>>>>> ca83e0d7bf0430b2abb7f8a58b6a22afb3cec8f6
