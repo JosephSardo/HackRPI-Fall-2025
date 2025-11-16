@@ -3,7 +3,7 @@ import DownClues from './components/DownClues.jsx'
 import Grid from './components/Grid.jsx'
 import { SAMPLE_CROSSWORD } from './data/sampleCrossword.js'
 import * as gridNav from './logic/gridNavigation.js'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
       
 export default function App() {
@@ -31,7 +31,7 @@ export default function App() {
   const [player2Score, setPlayer2Score] = useState(0)
   
   // Time states
-  const [timeLeft, setTimeLeft] = useState(300) // 10 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(11) // 10 minutes in seconds
   const [turnTimeLeft, setTurnTimeLeft] = useState(10) // 10 seconds per turn
   const [turnTimerActive, setTurnTimerActive] = useState(false)
   const [gameStarted, setGameStarted] = useState(false)
@@ -41,6 +41,7 @@ export default function App() {
   const [showStartModal, setShowStartModal] = useState(false)
   const modalContinueRef = useRef(null)
   const [winModalPlayer, setWinModalPlayer] = useState(null)
+  const [showConfetti, setShowConfetti] = useState(false)
 
   const gridRef = useRef(null)  
 
@@ -64,6 +65,11 @@ export default function App() {
         winner = 'Tie'
       }
       setWinModalPlayer(winner)
+      setShowConfetti(true)
+      // Stop turn timer when game ends
+      setTurnTimerActive(false)
+      // Stop confetti after 5 seconds
+      setTimeout(() => setShowConfetti(false), 5000)
       return
     }
 
@@ -496,7 +502,7 @@ export default function App() {
       
       {/* Score Widget */}
       <div className="score-widget">
-        <div className="score-display">
+        <div className={`score-display ${activePlayer ? 'active' : ''}`}>
           <span className="score-label">Player 1 Score:</span>
           <span className="score-value">{player1Score}</span>
         </div>
@@ -510,12 +516,12 @@ export default function App() {
         
         <div className="score-display timer-display">
           <span className="score-label">Game Time:</span>
-          <span className="score-value timer-value">
+          <span className={`score-value timer-value ${timeLeft < 60 ? 'urgent' : ''}`}>
             {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
           </span>
         </div>
         
-        <div className="score-display">
+        <div className={`score-display ${!activePlayer ? 'active' : ''}`}>
           <span className="score-label">Player 2 Score:</span>
           <span className="score-value">{player2Score}</span>
         </div>
@@ -547,6 +553,8 @@ export default function App() {
           </div>
         </div>
       )}
+      
+      {showConfetti && <Confetti />}
       {showStartModal && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal-box">
@@ -597,3 +605,108 @@ export default function App() {
     </main>
   )
 }
+
+function ClueLists({ cells, activeClue, isActive }) {
+  const activeRefs = useRef({})
+
+  useEffect(() => {
+    if (isActive && activeClue && activeRefs.current[activeClue]) {
+      activeRefs.current[activeClue].scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [activeClue, isActive])
+
+  if (!cells || cells.length === 0) return null
+
+  const across = []
+
+  // build across clues
+  SAMPLE_CROSSWORD['hints']['across'].forEach(hint => across.push(hint))
+
+  return (
+    <div className="clue-lists">
+      <div className="clue-group">
+        <h3>Across</h3>
+        <ul>
+          {across.sort((a, b) => a.number - b.number).map(item => (
+            <li 
+              key={`a-${item.number || `${item.row}-${item.col}`}`}
+              className={isActive && item.number === activeClue ? 'active-clue' : ''}
+              ref={el => { if (item.number) activeRefs.current[item.number] = el }}
+            >
+              <strong>{item.number}</strong> {item.clue}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+function DownClues({ cells, activeClue, isActive }) {
+  const activeRefs = useRef({})
+
+  useEffect(() => {
+    if (isActive && activeClue && activeRefs.current[activeClue]) {
+      activeRefs.current[activeClue].scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [activeClue, isActive]) 
+
+  if (!cells || cells.length === 0) return null
+
+  const down = []
+
+  // build down clues
+  for (const hint in SAMPLE_CROSSWORD['hints']['down']) {
+    down.push(SAMPLE_CROSSWORD['hints']['down'][hint])
+  }
+  
+  return (
+    <div className="clue-lists">
+      <div className="clue-group">
+        <h3>Down</h3>
+        <ul>
+          {down.sort((a, b) => a.number - b.number).map(item => (
+            <li 
+              key={`d-${item.number || `${item.row}-${item.col}`}`}
+              className={isActive && item.number === activeClue ? 'active-clue' : ''}
+              ref={el => { if (item.number) activeRefs.current[item.number] = el }}
+            >
+              <strong>{item.number}</strong> {item.clue}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+function Confetti() {
+  const pieces = useMemo(() => {
+    return Array.from({ length: 120 }, (_, i) => {
+      const drift = (Math.random() - 0.5) * 400 // -200px to +200px horizontal drift
+      const rotation = Math.random() * 720 + 360 // 360-1080 degrees
+      const duration = 2 + Math.random() * 2 // 2-4 seconds
+      const delay = Math.random() * 1 // 0-1 second delay
+      const size = 0.8 + Math.random() * 1.2 // 0.8x to 2x size multiplier
+      
+      return (
+        <div
+          key={`confetti-${i}`}
+          className="confetti-piece"
+          style={{
+            left: `${Math.random() * 120 - 10}%`, // -10% to 110% (overflow for edge effect)
+            '--drift': `${drift}px`,
+            '--rotation': `${rotation}deg`,
+            '--size': size,
+            animationDelay: `${delay}s`,
+            animationDuration: `${duration}s`,
+          }}
+        />
+      )
+    })
+  }, []) // Empty dependency array ensures pieces are created only once
+
+  return <div className="confetti">{pieces}</div>
+}
+
+export default App
