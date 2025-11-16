@@ -181,11 +181,11 @@
 /* Focused cell shows a yellow highlight to indicate keyboard focus */
 .cell:focus {
   background-color: rgba(255, 200, 149, 0.7); /* semi-transparent pale orange */
-  border-color: #ff9d3c;
+  border-color: #ff9d3c !important;
   color: #000;
   outline: none;
-  box-shadow: none;
-  z-index: 30; /* ensure focus ring is above neighbors */
+  z-index: 100; /* much higher to ensure it's above everything */
+  position: relative;
 }
 
 /* If a selected cell also has focus, prefer the focus (orange) styling */
@@ -200,7 +200,9 @@
 
 .cell.row-highlight {
   background-color: rgba(255, 248, 176, 0.7);
-  border-color: #ffd54f;
+  border-color: #ffd54f !important;
+  z-index: 50;
+  position: relative;
 }
 
 .cell.mutable {
@@ -224,9 +226,16 @@
   background: #222;
   color: #222;
   cursor: default;
+  pointer-events: none;
   /* background-image: url('images/black_square.png');
   background-size: cover;
   background-color: transparent; */
+}
+
+.cell.black:focus {
+  outline: none;
+  background: #222;
+  border-color: #222;
 }
 
 .cell.black.selected {
@@ -252,12 +261,14 @@
 
 .clues {
   width: 260px;
-  max-height: 640px;
+  height: 500px;
+  max-height: 500px;
   overflow: auto;
   padding: 8px 12px;
   background: #fff;
   border: 1px solid #e6e6e6;
   border-radius: 6px;
+  box-sizing: border-box;
 }
 
 .clue-lists {

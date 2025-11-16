@@ -27,7 +27,7 @@ function App() {
   const [player2Score, setPlayer2Score] = useState(0)
   
   // Time states
-  const [timeLeft, setTimeLeft] = useState(600) // 10 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(300) // 10 minutes in seconds
   const [turnTimeLeft, setTurnTimeLeft] = useState(10) // 10 seconds per turn
   const [turnTimerActive, setTurnTimerActive] = useState(false)
   const [gameStarted, setGameStarted] = useState(false)
@@ -447,8 +447,11 @@ function App() {
       })
       ev.preventDefault()
       // move focus according to current direction
+      
       const next = direction === "down" ? gridNav.findNextOpenCellDown(cells, row, col, rows, cols) : gridNav.findNextOpenCellAcross(cells, row, col, rows, cols)
-      if (next) {
+      const nextAvailabe = direction === "down" ? !gridNav.getCellByIndex(cells, row + 1, col, cols)?.isBlack : !gridNav.getCellByIndex(cells, row, col + 1, cols)?.isBlack
+
+      if (next && nextAvailabe) {
         // update selection and highlight
         setSelected({ row: next.row, col: next.col })
         if (direction === "down") updateColHighlight(next.row, next.col)
@@ -458,12 +461,6 @@ function App() {
           const el = document.querySelector(`.cell[data-row="${next.row}"][data-col="${next.col}"]`)
           if (el) el.focus()
         }, 0)
-      } else {
-        // No more cells in this word - end turn
-        setTurnTimerActive(false)
-        setActivePlayer(prev => !prev)
-        setTurnTimeLeft(10)
-        setShowSwapModal(true)
       }
     }
   }
