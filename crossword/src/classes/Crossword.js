@@ -1,4 +1,4 @@
-export class Crossword {
+export default class Crossword {
     constructor(grid, acrossHints, downHints) {
         this.grid = grid
         this.hints = {
