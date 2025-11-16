@@ -57,7 +57,13 @@ main{max-width:900px;margin:0 auto}
   color: #222;
   z-index: 1;
 }
-.cell.black{background:#222;color:#222;cursor:default}
+.cell.black{
+  background-image: "images/black_square.png";
+  background-size: cover;
+  background:#222;
+  color:#222;
+  cursor:default
+}
 .cell[contenteditable="true"]{outline: none}
 #status{font-size:0.95rem;color:#333}
 @media (max-width:480px){

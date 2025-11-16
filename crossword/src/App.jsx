@@ -257,12 +257,15 @@ function App() {
       return
     }
 
+    // Prevent auto-repeat from holding down Enter key
+    if (ev.repeat) {
+      return
+    }
+
     // Toggle immediately when Enter is pressed (user preference)
     setActivePlayer(prev => !prev)
     setShowSwapModal(true)
 
-    debugger
-    
     let length = 0
     if (direction === "across") {
       let startCol = 0

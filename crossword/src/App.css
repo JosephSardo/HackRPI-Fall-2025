@@ -74,14 +74,9 @@
 
 .timer-value {
   color: #e74c3c;
-  font-family: 'Courier New', monospace;
 }
 
 .turn-timer {
-  background: rgba(255, 193, 7, 0.1);
-  border-radius: 4px;
-  border-left: 2px solid #ffc107;
-  border-right: 2px solid #ffc107;
   padding-left: 1rem;
   padding-right: 1rem;
 }
@@ -143,14 +138,14 @@
 }
 
 .cell {
-  /* background-image: url('/images/red_square.png');
+  background-image: url('/images/white_square.png');
   background-size: cover;
   background-repeat: no-repeat;
-  background-position: center; */
-  background: #fff;
+  background-position: center;
+  background-color: #fff;
   border: none;
-  color: #000;
-  border: 1px solid #ddd;
+  color: #ffe430;
+  border: 1px solid #000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -173,6 +168,10 @@
 
 .cell.selected {
   z-index: 20;
+  background-image: url('/images/white_square.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
   background-color: rgba(230, 243, 255, 0.7);
   border-color: #5b9cff;
   color: #022;
@@ -180,6 +179,10 @@
 
 /* Focused cell shows a yellow highlight to indicate keyboard focus */
 .cell:focus {
+  background-image: url('/images/white_square.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
   background-color: rgba(255, 200, 149, 0.7); /* semi-transparent pale orange */
   border-color: #ff9d3c !important;
   color: #000;
@@ -199,6 +202,10 @@
 }
 
 .cell.row-highlight {
+  background-image: url('/images/white_square.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
   background-color: rgba(255, 248, 176, 0.7);
   border-color: #ffd54f !important;
   z-index: 50;
@@ -216,20 +223,21 @@
   left: 3px;
   top: 1px;
   font-size: 0.6rem;
-  color: #333;
+  color: #b8a022;
   line-height: 1;
   pointer-events: none;
   font-weight: 500;
 }
 
 .cell.black {
-  background: #222;
+  background-image: url('/images/black_square.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #222;
   color: #222;
   cursor: default;
   pointer-events: none;
-  /* background-image: url('images/black_square.png');
-  background-size: cover;
-  background-color: transparent; */
 }
 
 .cell.black:focus {
