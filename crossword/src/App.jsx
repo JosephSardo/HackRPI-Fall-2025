@@ -8,10 +8,11 @@ import ModalOverlay from './components/ModalOverlay.jsx'
 import StartModal from './components/StartModal.jsx'
 import VictoryModal from './components/VictoryModal.jsx'
 import * as gridNav from './logic/gridNavigation.js'
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
       
-const TURN_TIME = 30
+const TURN_TIME = 20
+const GAME_TIME = 300
 
 export default function App() {
   // Grid states
@@ -39,19 +40,20 @@ export default function App() {
   const [player2Score, setPlayer2Score] = useState(0)
   
   // Time states
-  const [timeLeft, setTimeLeft] = useState(300) // 10 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(GAME_TIME) // 10 minutes in seconds
   const [turnTimeLeft, setTurnTimeLeft] = useState(TURN_TIME) // 10 seconds per turn
   const [turnTimerActive, setTurnTimerActive] = useState(false)
   const [gameStarted, setGameStarted] = useState(false)
 
   // Modal states
-  const [showSwapModal, setShowSwapModal] = useState(false)
   const [showStartModal, setShowStartModal] = useState(false)
+  const [countdown, setCountdown] = useState(null) // 3, 2, 1, or null
   const modalContinueRef = useRef(null)
   const [winModalPlayer, setWinModalPlayer] = useState(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [viewingSolution, setViewingSolution] = useState(false)
   const [feedbackType, setFeedbackType] = useState(null) // 'success' | 'error' | null
+  const errorFeedbackTimeoutRef = useRef(null)
 
   const gridRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -121,7 +123,7 @@ export default function App() {
     const formData = new FormData()
     formData.append('file', file)
     
-    fetch('http://127.0.0.1:5173/api/jsonify', {
+    fetch('http://127.0.0.1:5174/api/jsonify', {
       method: 'POST',
       body: formData
     })
@@ -184,18 +186,22 @@ export default function App() {
     setPlayer2Score(0)
     
     // Reset time states
-    setTimeLeft(11)
+    setTimeLeft(GAME_TIME)
     setTurnTimeLeft(TURN_TIME)
     setTurnTimerActive(false)
     setGameStarted(false)
     
     // Reset modal states
-    setShowSwapModal(false)
     setShowStartModal(false)
+    setCountdown(null)
     setWinModalPlayer(null)
     setShowConfetti(false)
     setViewingSolution(false)
     setFeedbackType(null)
+    if (errorFeedbackTimeoutRef.current) {
+      clearTimeout(errorFeedbackTimeoutRef.current)
+      errorFeedbackTimeoutRef.current = null
+    }
     setFileLoaded(false)
     
     // Reinitialize the grid
@@ -209,6 +215,70 @@ export default function App() {
   useEffect(() => {
     setShowStartModal(true)
   }, [])
+
+  // Countdown effect
+  useEffect(() => {
+    if (countdown === null) return
+    
+    if (countdown > 0) {
+      // Play countdown sound
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+        // Same tone for all countdown numbers
+        oscillator.frequency.setValueAtTime(400, audioContext.currentTime)
+        
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+        
+        oscillator.start(audioContext.currentTime)
+        oscillator.stop(audioContext.currentTime + 0.5)
+      } catch (e) {
+        console.log('Audio context not available')
+      }
+      
+      // Continue countdown after 1 second
+      setTimeout(() => {
+        setCountdown(prev => prev - 1)
+      }, 1000)
+    } else {
+      // Countdown finished - play start sound and start the game
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+        // Higher pitch for game start
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8)
+        
+        oscillator.start(audioContext.currentTime)
+        oscillator.stop(audioContext.currentTime + 0.8)
+      } catch (e) {
+        console.log('Audio context not available')
+      }
+      
+      setCountdown(null)
+      setGameStarted(true)
+      setTurnTimerActive(true)
+      setTurnTimeLeft(TURN_TIME)
+      
+      setTimeout(() => {
+        const el = document.querySelector(`.cell[data-row="${selected?.row}"][data-col="${selected?.col}"]`)
+        if (el) el.focus()
+      }, 0)
+    }
+  }, [countdown, selected])
 
   // Timer countdown effect
   useEffect(() => {
@@ -225,10 +295,43 @@ export default function App() {
       }
       setWinModalPlayer(winner)
       setShowConfetti(true)
+      
+      // Play victory sound effect
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+        
+        // Create a triumphant fanfare sequence
+        const notes = [
+          { freq: 523.25, start: 0.0, duration: 0.3 },   // C5
+          { freq: 659.25, start: 0.2, duration: 0.3 },   // E5
+          { freq: 783.99, start: 0.4, duration: 0.3 },   // G5
+          { freq: 1046.5, start: 0.6, duration: 0.5 },   // C6 (octave higher, triumphant)
+          { freq: 783.99, start: 0.9, duration: 0.4 },   // G5 (resolution)
+          { freq: 1046.5, start: 1.2, duration: 0.8 }    // C6 (final victory note)
+        ]
+        
+        notes.forEach(note => {
+          const oscillator = audioContext.createOscillator()
+          const gainNode = audioContext.createGain()
+          
+          oscillator.connect(gainNode)
+          gainNode.connect(audioContext.destination)
+          
+          oscillator.frequency.setValueAtTime(note.freq, audioContext.currentTime + note.start)
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime + note.start)
+          gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + note.start + 0.05)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.start + note.duration)
+          
+          oscillator.start(audioContext.currentTime + note.start)
+          oscillator.stop(audioContext.currentTime + note.start + note.duration)
+        })
+      } catch (e) {
+        // Silently fail if audio context is not available
+        console.log('Audio context not available')
+      }
+      
       // Stop turn timer when game ends
       setTurnTimerActive(false)
-      // Close swap modal if it's open
-      setShowSwapModal(false)
       // Clear highlights and selected cell when game ends
       setHighlight([])
       setSelected(null)
@@ -241,17 +344,20 @@ export default function App() {
       return
     }
 
-    // Pause game timer when swap or start modal is open
-    if (showSwapModal || showStartModal) {
+    // Pause game timer when start modal is open or when victory modal is shown
+    if (showStartModal || winModalPlayer !== null) {
       return
     }
 
     const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1)
+      setTimeLeft(prev => {
+        const newTime = prev - 1
+        return newTime
+      })
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [timeLeft, player1Score, player2Score, showSwapModal, showStartModal, gameStarted])
+  }, [timeLeft, player1Score, player2Score, showStartModal, gameStarted])
 
   // Turn timer countdown effect
   useEffect(() => {
@@ -260,22 +366,72 @@ export default function App() {
       if (turnTimeLeft <= 0 && turnTimerActive) {
         // Time's up - switch players
         setActivePlayer(prev => !prev)
+        
+        // Play player switch sound effect
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+          const oscillator = audioContext.createOscillator()
+          const gainNode = audioContext.createGain()
+          
+          oscillator.connect(gainNode)
+          gainNode.connect(audioContext.destination)
+          
+          // Create a "whoosh" or "pass" sound - quick frequency sweep
+          oscillator.frequency.setValueAtTime(300, audioContext.currentTime)
+          oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1)
+          oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.2)
+          
+          gainNode.gain.setValueAtTime(0.08, audioContext.currentTime)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+          
+          oscillator.start(audioContext.currentTime)
+          oscillator.stop(audioContext.currentTime + 0.2)
+        } catch (e) {
+          // Silently fail if audio context is not available
+          console.log('Audio context not available')
+        }
+        
         setTurnTimeLeft(TURN_TIME) // Reset timer
-        setTurnTimerActive(false) // Stop timer until continue button is pressed
-        setShowSwapModal(true) // Show swap notification
+        setTurnTimerActive(true) // Continue with new player's turn immediately
       }
       return
     }
 
     const timer = setInterval(() => {
-      setTurnTimeLeft(prev => prev - 1)
+      setTurnTimeLeft(prev => {
+        const newTime = prev - 1
+        
+        // Play ticking sound for last 3 seconds
+        if (newTime <= 3 && newTime > 0) {
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+            const oscillator = audioContext.createOscillator()
+            const gainNode = audioContext.createGain()
+            
+            oscillator.connect(gainNode)
+            gainNode.connect(audioContext.destination)
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime) // High pitch tick
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1)
+            
+            oscillator.start(audioContext.currentTime)
+            oscillator.stop(audioContext.currentTime + 0.1)
+          } catch (e) {
+            // Silently fail if audio context is not available
+            console.log('Audio context not available')
+          }
+        }
+        
+        return newTime
+      })
     }, 1000)
 
     return () => clearInterval(timer)
   }, [turnTimeLeft, turnTimerActive, gameStarted])
   
   function handleCellClick(row, col) {
-    if (showSwapModal || showStartModal || winModalPlayer !== null || viewingSolution) return
+    if (showStartModal || winModalPlayer !== null || viewingSolution) return
     if (gridNav.getCellByIndex(cells, row, col, cols)?.isBlack) return
     setSelected({ row: row, col: col })
     // Respect current direction: if we're in 'down' mode, keep it and update column highlight.
@@ -294,7 +450,7 @@ export default function App() {
   }
 
   function handleCellDoubleClick(row, col) {
-    if (showSwapModal || showStartModal || winModalPlayer !== null || viewingSolution) return
+    if (showStartModal || winModalPlayer !== null || viewingSolution) return
     if (gridNav.getCellByIndex(cells, row, col, cols)?.isBlack) return
     // toggle direction: if currently down, switch back to across
     if (direction === "down") {
@@ -319,6 +475,7 @@ export default function App() {
   }
 
   function updateRowHighlight(row, col) {
+    if (showStartModal || winModalPlayer !== null) return
     // Find contiguous non-black cells in the row
     let left = col
     while (left > 0 && !gridNav.getCellByIndex(cells, row, left - 1, cols)?.isBlack) {
@@ -341,7 +498,7 @@ export default function App() {
   }
 
   function updateColHighlight(row, col) {
-    if (showSwapModal || showStartModal || winModalPlayer !== null) return
+    if (showStartModal || winModalPlayer !== null) return
     let top = row
     while (top - 1 >= 0 && !gridNav.getCellByIndex(cells, top - 1, col, cols)?.isBlack) {
       top -= 1
@@ -362,7 +519,68 @@ export default function App() {
     setCurrentDownClue(startCell?.number || null)
   }
 
+  function handleClueClick(clueNumber, direction) {
+    if (!crossword || !cells) return
+    
+    // Find the starting cell for this clue number
+    let startCell = null
+    for (const cell of cells) {
+      if (cell.number === clueNumber && !cell.isBlack) {
+        startCell = cell
+        break
+      }
+    }
+    
+    if (!startCell) return
+    
+    const { row, col } = startCell
+    
+    // Set the direction and update highlights
+    setDirection(direction)
+    setSelected({ row, col })
+    
+    if (direction === 'across') {
+      updateRowHighlight(row, col)
+    } else {
+      updateColHighlight(row, col)
+    }
+    
+    // Focus the first cell after a brief delay to ensure DOM is updated
+    setTimeout(() => {
+      const el = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`)
+      if (el) el.focus()
+    }, 0)
+  }
+
   function onFail(row, col, across) {
+    setActivePlayer(prev => !prev)
+    
+    // Play player switch sound effect
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      // Create a "whoosh" or "pass" sound - quick frequency sweep
+      oscillator.frequency.setValueAtTime(300, audioContext.currentTime)
+      oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1)
+      oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.2)
+      
+      gainNode.gain.setValueAtTime(0.08, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.2)
+    } catch (e) {
+      // Silently fail if audio context is not available
+      console.log('Audio context not available')
+    }
+    
+    setTurnTimeLeft(TURN_TIME)
+
     if (across) {
       for (let i = col; !gridNav.getCellByIndex(cells, row, i, cols).isBlack; i++) {
         setCells(prev => {
@@ -400,17 +618,9 @@ export default function App() {
       return
     }
 
-    // Show success feedback before switching players
+    // Show success feedback and play success sound
     setFeedbackType('success')
-    setTurnTimerActive(false) // Stop timer until continue button is pressed
     
-    // Delay player switch and modal to show feedback
-    setTimeout(() => {
-      setActivePlayer(prev => !prev)
-      setShowSwapModal(true)
-      setFeedbackType(null)
-    }, 800) // 800ms delay for celebration
-
     let length = 0
     if (direction === "across") {
       let startCol = 0
@@ -423,11 +633,39 @@ export default function App() {
       
       for (let i = startCol; i < cols &&  !gridNav.getCellByIndex(cells, row, i, cols)?.isBlack; i++) {
         if (grid[row][i] !== gridNav.getCellByIndex(cells, row, i, cols).value) {
-          // Show error feedback before clearing
+          // Show error feedback and play failure sound
+          if (errorFeedbackTimeoutRef.current) {
+            clearTimeout(errorFeedbackTimeoutRef.current)
+          }
           setFeedbackType('error')
-          setTimeout(() => {
+          
+          // Play failure sound effect
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+            const oscillator = audioContext.createOscillator()
+            const gainNode = audioContext.createGain()
+            
+            oscillator.connect(gainNode)
+            gainNode.connect(audioContext.destination)
+            
+            // Create a descending failure tone
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime) // Start higher
+            oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3) // Drop down
+            
+            gainNode.gain.setValueAtTime(0.12, audioContext.currentTime)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
+            
+            oscillator.start(audioContext.currentTime)
+            oscillator.stop(audioContext.currentTime + 0.3)
+          } catch (e) {
+            // Silently fail if audio context is not available
+            console.log('Audio context not available')
+          }
+          
+          errorFeedbackTimeoutRef.current = setTimeout(() => {
             onFail(row, startCol, true)
             setFeedbackType(null)
+            errorFeedbackTimeoutRef.current = null
           }, 500) // 500ms delay for error flash
           return false
         }
@@ -447,11 +685,39 @@ export default function App() {
 
       for(let i = startRow; i < rows && !gridNav.getCellByIndex(cells, i, col, cols)?.isBlack; i++) {
         if (grid[i][col] !== gridNav.getCellByIndex(cells, i, col, cols).value) {
-          // Show error feedback before clearing
+          // Show error feedback and play failure sound
+          if (errorFeedbackTimeoutRef.current) {
+            clearTimeout(errorFeedbackTimeoutRef.current)
+          }
           setFeedbackType('error')
-          setTimeout(() => {
+          
+          // Play failure sound effect
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+            const oscillator = audioContext.createOscillator()
+            const gainNode = audioContext.createGain()
+            
+            oscillator.connect(gainNode)
+            gainNode.connect(audioContext.destination)
+            
+            // Create a descending failure tone
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime) // Start higher
+            oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3) // Drop down
+            
+            gainNode.gain.setValueAtTime(0.12, audioContext.currentTime)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
+            
+            oscillator.start(audioContext.currentTime)
+            oscillator.stop(audioContext.currentTime + 0.3)
+          } catch (e) {
+            // Silently fail if audio context is not available
+            console.log('Audio context not available')
+          }
+          
+          errorFeedbackTimeoutRef.current = setTimeout(() => {
             onFail(startRow, col, false)
             setFeedbackType(null)
+            errorFeedbackTimeoutRef.current = null
           }, 500) // 500ms delay for error flash
           return false
         }
@@ -462,17 +728,109 @@ export default function App() {
       }
     }
 
+    // Clear success feedback after animation completes
+    setTimeout(() => {
+      setFeedbackType(null)
+    }, 800) // 800ms to match success animation duration
+
     if (activePlayer) {
       setPlayer1Score(prev => prev + length);
     }
     else {
       setPlayer2Score(prev => prev + length);
     }
+
+    // Play success sound effect
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      // Create a pleasant success chime (major chord)
+      oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime) // C5
+      oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1) // E5
+      oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2) // G5
+      
+      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.4)
+    } catch (e) {
+      // Silently fail if audio context is not available
+      console.log('Audio context not available')
+    }
+    
+    // Check if puzzle is now complete
+    if (checkPuzzleCompletion()) {
+      // End the game immediately - puzzle is solved!
+      setTurnTimerActive(false)
+      
+      // Determine winner based on current scores
+      const finalPlayer1Score = activePlayer ? player1Score + length : player1Score
+      const finalPlayer2Score = activePlayer ? player2Score : player2Score + length
+      
+      if (finalPlayer1Score > finalPlayer2Score) {
+        setWinModalPlayer('Player 1')
+      } else if (finalPlayer2Score > finalPlayer1Score) {
+        setWinModalPlayer('Player 2')
+      } else {
+        setWinModalPlayer('Tie')
+      }
+      
+      setShowConfetti(true)
+      
+      // Play victory sound
+      setTimeout(() => {
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+          
+          // Create a triumphant fanfare sequence
+          const frequencies = [523.25, 659.25, 783.99, 1046.50] // C5, E5, G5, C6
+          
+          frequencies.forEach((freq, index) => {
+            setTimeout(() => {
+              const oscillator = audioContext.createOscillator()
+              const gainNode = audioContext.createGain()
+              
+              oscillator.connect(gainNode)
+              gainNode.connect(audioContext.destination)
+              
+              oscillator.frequency.setValueAtTime(freq, audioContext.currentTime)
+              gainNode.gain.setValueAtTime(0.2, audioContext.currentTime)
+              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6)
+              
+              oscillator.start(audioContext.currentTime)
+              oscillator.stop(audioContext.currentTime + 0.6)
+            }, index * 200)
+          })
+        } catch (e) {
+          console.log('Audio context not available')
+        }
+      }, 500)
+    }
+    
     return true
   }
 
+  // Check if the entire puzzle is completed
+  function checkPuzzleCompletion() {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = gridNav.getCellByIndex(cells, r, c, cols)
+        if (!cell?.isBlack && grid[r][c] !== cell.value) {
+          return false // Found an empty or incorrect cell
+        }
+      }
+    }
+    return true // All cells are correctly filled
+  }
+
   function handleCellKeyDown(row, col, ev) {
-    if (showSwapModal || showStartModal || viewingSolution) { ev.preventDefault(); return }
+    if (showStartModal || viewingSolution) { ev.preventDefault(); return }
     if (gridNav.getCellByIndex(cells, row, col, cols)?.isBlack) return
 
     handleKeyEnter(row, col, ev)
@@ -595,6 +953,20 @@ export default function App() {
 
     if (/^[a-zA-Z]$/.test(ev.key)) {
       if (!gridNav.getCellByIndex(cells, row, col, cols).mutable) {
+        // If cell is immutable, move cursor forward instead
+        const next = direction === "down" ? gridNav.findNextInCol(cells, row, col, rows, cols) : gridNav.findNextInRow(cells, row, col, cols)
+        const nextAvailable = direction === "down" ? !gridNav.getCellByIndex(cells, row + 1, col, cols)?.isBlack : !gridNav.getCellByIndex(cells, row, col + 1, cols)?.isBlack
+
+        if (next && nextAvailable) {
+          setSelected({ row: next.row, col: next.col })
+          if (direction === "down") updateColHighlight(next.row, next.col)
+          else updateRowHighlight(next.row, next.col)
+          setTimeout(() => {
+            const el = document.querySelector(`.cell[data-row="${next.row}"][data-col="${next.col}"]`)
+            if (el) el.focus()
+          }, 0)
+        }
+        ev.preventDefault()
         return
       }
 
@@ -606,7 +978,7 @@ export default function App() {
       ev.preventDefault()
       // move focus according to current direction
       
-      const next = direction === "down" ? gridNav.findNextOpenCellDown(cells, row, col, rows, cols) : gridNav.findNextOpenCellAcross(cells, row, col, rows, cols)
+      const next = direction === "down" ? gridNav.findNextInCol(cells, row, col, rows, cols) : gridNav.findNextInRow(cells, row, col, cols)
       const nextAvailabe = direction === "down" ? !gridNav.getCellByIndex(cells, row + 1, col, cols)?.isBlack : !gridNav.getCellByIndex(cells, row, col + 1, cols)?.isBlack
 
       if (next && nextAvailabe) {
@@ -623,34 +995,29 @@ export default function App() {
     }
   }
 
-  useEffect(() => {
-    if (showSwapModal) {
-      // focus the Continue button so keyboard users can proceed
-      setTimeout(() => {
-        if (modalContinueRef.current) modalContinueRef.current.focus()
-      }, 0)
-    }
-  }, [showSwapModal])
+
 
   return (
     <main className="app">
-      {/* Player Headers */}
-      <div className="player-headers">
-        <h2 
-          className={`player-header ${activePlayer ? 'active' : ''}`}
-        >
-          Player 1
-        </h2>
-        <h2 
-          className={`player-header ${!activePlayer ? 'active' : ''}`}
-        >
-          Player 2
-        </h2>
-      </div>
-      
-      <ScoreWidget activePlayer={activePlayer} player1Score={player1Score} player2Score={player2Score} turnTimeLeft={turnTimeLeft} turnTimerActive={turnTimerActive} timeLeft={timeLeft}/>
-      
-      <div className="controls">
+      {!showStartModal && (
+        <>
+          {/* Player Headers */}
+          <div className="player-headers">
+            <h2 
+              className={`player-header ${activePlayer ? 'active' : ''}`}
+            >
+              Player 1
+            </h2>
+            <h2 
+              className={`player-header ${!activePlayer ? 'active' : ''}`}
+            >
+              Player 2
+            </h2>
+          </div>
+          
+          <ScoreWidget activePlayer={activePlayer} player1Score={player1Score} player2Score={player2Score} turnTimeLeft={turnTimeLeft} turnTimerActive={turnTimerActive} timeLeft={timeLeft}/>
+          
+          <div className="controls">
         {viewingSolution && (
           <button
             className="back-btn"
@@ -659,23 +1026,26 @@ export default function App() {
             ← Back to Results
           </button>
         )}
-      </div>
-      <div className="board">
-        <div className={`grid ${feedbackType ? `feedback-${feedbackType}` : ''}`} role="grid" aria-label="Crossword grid" ref={gridRef} aria-hidden={showSwapModal || showStartModal} style={{
-          gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          gridTemplateRows: `repeat(${rows}, 1fr)`
-        }}>
-          <Grid cells={cells} selected={selected} highlight={highlight} clickHandler={handleCellClick} doubleClickHandler={handleCellDoubleClick} keyDownHandler={handleCellKeyDown}/>
-        </div>
+          </div>
+          <div className="board">
+            <div className={`grid ${feedbackType ? `feedback-${feedbackType}` : ''}`} role="grid" aria-label="Crossword grid" ref={gridRef} aria-hidden={showStartModal} style={{
+              gridTemplateColumns: `repeat(${cols}, 1fr)`,
+              gridTemplateRows: `repeat(${rows}, 1fr)`,
+              '--cell-font-size': `${Math.min(500 / cols, 500 / rows) * 0.45}px`
+            }}>
+              <Grid cells={cells} selected={selected} highlight={highlight} clickHandler={handleCellClick} doubleClickHandler={handleCellDoubleClick} keyDownHandler={handleCellKeyDown}/>
+            </div>
 
-        <aside className="clues" aria-label="Across Clues">
-          <AcrossClues crossword={crossword} cells={cells} activeClue={currentAcrossClue} isActive={direction === 'across'} />
-        </aside>
+            <aside className="clues" aria-label="Across Clues">
+              <AcrossClues crossword={crossword} cells={cells} activeClue={currentAcrossClue} isActive={direction === 'across'} onClueClick={handleClueClick} />
+            </aside>
 
-        <aside className="clues" aria-label="Down Clues">
-          <DownClues crossword={crossword} cells={cells} activeClue={currentDownClue} isActive={direction === 'down'} />
-        </aside>
-      </div>
+            <aside className="clues" aria-label="Down Clues">
+              <DownClues crossword={crossword} cells={cells} activeClue={currentDownClue} isActive={direction === 'down'} onClueClick={handleClueClick} />
+            </aside>
+          </div>
+        </>
+      )}
       
       {winModalPlayer && <VictoryModal 
         victoryMessage={winModalPlayer === 'Tie' ? '🤝 It\'s a Tie! 🤝' : `🎉 ${winModalPlayer} Wins! 🎉`}
@@ -686,6 +1056,14 @@ export default function App() {
       
       {showConfetti && <Confetti />}
       
+      {countdown !== null && countdown > 0 && (
+        <div className="countdown-overlay">
+          <div className="countdown-number">
+            {countdown}
+          </div>
+        </div>
+      )}
+      
       {showStartModal && <StartModal 
         startMessage={fileLoaded ? "Press start to begin the game." : "Load a .puz file to get started."}
         fileInputRef={fileInputRef}
@@ -694,29 +1072,12 @@ export default function App() {
         startHandler={() => {
           try { localStorage.setItem('startSeen', '1') } catch (e) {}
           setShowStartModal(false)
-          setGameStarted(true)
-          setTurnTimerActive(true)
-          setTurnTimeLeft(TURN_TIME)
-          setTimeout(() => {
-            const el = document.querySelector(`.cell[data-row="${selected?.row}"][data-col="${selected?.col}"]`)
-            if (el) el.focus()
-          }, 0)
+          setCountdown(3) // Start 3-second countdown
         }}
         loadFileHandler={handleLoadFile}
       />}
       
-      {showSwapModal && <ModalOverlay 
-        modalMessage={`Players swapped — it's now ${activePlayer ? 'Player 1' : 'Player 2'}'s turn.`}
-        clickHandler = {() => {
-          setShowSwapModal(false)
-          // Start turn timer only when continue button is pressed
-          setTurnTimerActive(true)
-          setTurnTimeLeft(TURN_TIME)
-          setTimeout(() => {
-            const el = document.querySelector(`.cell[data-row="${selected?.row}"][data-col="${selected?.col}"]`)
-            if (el) el.focus()
-          }, 0)
-      }} />}      
+      
     </main>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-export default function DownClues({ crossword, cells, activeClue, isActive }) {
+export default function DownClues({ crossword, cells, activeClue, isActive, onClueClick }) {
   const activeRefs = useRef({})
 
   useEffect(() => {
@@ -26,8 +26,10 @@ export default function DownClues({ crossword, cells, activeClue, isActive }) {
               key={`d-${item.number || `${item.row}-${item.col}`}`}
               className={isActive && item.number === activeClue ? 'active-clue' : ''}
               ref={el => { if (item.number) activeRefs.current[item.number] = el }}
+              onClick={() => onClueClick && onClueClick(item.number, 'down')}
+              style={{ cursor: 'pointer' }}
             >
-              <strong>{item.number}</strong> {item.clue}
+              <strong>{item.number}</strong> <span dangerouslySetInnerHTML={{ __html: item.clue }} />
             </li>
           ))}
         </ul>

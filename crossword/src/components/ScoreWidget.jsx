@@ -27,29 +27,3 @@ export default function ScoreWidget({ activePlayer, player1Score, player2Score, 
         </div>
     )
 }
-
-/*
-{showSwapModal && (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal-box">
-            <p className="modal-message">Players swapped — it's now {activePlayer ? 'Player 1' : 'Player 2'}'s turn.</p>
-            <button
-              ref={modalContinueRef}
-              className="modal-btn"
-              onClick={() => {
-                setShowSwapModal(false)
-                // Start turn timer immediately when player's turn begins
-                setTurnTimerActive(true)
-                setTurnTimeLeft(10)
-                setTimeout(() => {
-                  const el = document.querySelector(`.cell[data-row="${selected?.row}"][data-col="${selected?.col}"]`)
-                  if (el) el.focus()
-                }, 0)
-              }}
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      )}
-*/
